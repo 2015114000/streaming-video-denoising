@@ -1,0 +1,99 @@
+clear all
+clc
+
+addpath(genpath(pwd))
+% addpath(genpath('E:\博三第二学期\视频去噪\代码\DTuckerO\DTuckerO\src'));
+% addpath(genpath('E:\博三第二学期\视频去噪\代码\DTuckerO\DTuckerO\library'));
+% addpath(genpath('E:\博三第一学期\视频去噪\代码\DTucker-v1.0\DTucker\library\'));
+% addpath(genpath('E:\博三第二学期\视频去噪\代码\code of ITSReg MSI denoising 2\code of ITSReg MSI denoising\'));
+
+
+
+%% read video1
+video_num=19;
+% v = VideoReader(['data\Moments_in_Time_Raw\S' num2str(video_num) '.mp4']);
+
+v = VideoReader('E:\博三第二学期\代码\PTSTRC-main\data\LJ03-1_2023_02_28_21_06_49_OVT_SSS_01.mp4');
+% I_int=uint8(zeros(v.Height,v.Width,3,v.NumFrames));
+
+frame_num=min(50,v.NumFrames);
+
+frame1=read(v,1);
+I_1=imresize(frame1,168/size(frame1,1));
+[Height,Width,Channel]=size(I_1);
+
+I_int=uint8(zeros(Height,Width,Channel,frame_num));
+count=1;
+for i=1:frame_num
+    frame_i=read(v,i);
+    I_int(:,:,:,count)=uint8(imresize(frame_i,168/size(frame1,1)));
+    
+    count=count+1;
+end
+n_o=size(I_int);
+fprintf('number: %d, height: %d, width %d\n',frame_num,n_o(1),n_o(2));
+sigma     = 50;     % sigma of Gaussian distribution
+% Y = X + sigma * randn(size(X));  % add Gaussian noise
+MissM_int=uint8(double(I_int)+sigma * randn(size(I_int))); 
+MissM=double(MissM_int)/255;
+I=double(I_int)/255;
+
+%% read video2
+video_path = 'E:\博三第二学期\代码\PTSTRC-main\data\VISO dataset\mot\plane\040\img\';
+video_file = dir(strcat(video_path,'*.jpg')); 
+frame_num = length(video_file);
+disp(frame_num)
+
+firframe_name = video_file(1).name;% 图像名 
+firframe_rgb=double(imread(strcat(video_path,firframe_name)));
+firframe_tmp=firframe_rgb(:,:,:);
+[H, W, ~] = size(firframe_tmp);
+scale = 256 /min(H,W);
+firframe_norm=imresize(firframe_tmp, scale);
+[H1, W1, Channel1] = size(firframe_norm);
+I_int=uint8(zeros(H1,W1,Channel1,frame_num));
+
+sigma     = 80;
+for t=1:1:frame_num
+
+
+    firframe_name = video_file(t).name;% 图像名 
+    frame_t_rgb=double(imread(strcat(video_path,firframe_name)));
+    frame_t_tmp=frame_t_rgb(:,:,:);
+    frame_t = imresize(frame_t_tmp, scale);
+    I_int(:,:,:,t)=uint8(frame_t);
+    imshow(uint8(frame_t))
+end
+MissM_int=uint8(double(I_int)+sigma * randn(size(I_int))); 
+
+MissM=double(MissM_int)/255;
+
+I=double(I_int)/255;
+%% PTSTRC %%%%%%%%%%
+EN_PTSTRC=1;
+if EN_PTSTRC
+    option=get_option_default(sigma);
+    option.nChannel=3;
+    option.flowPrm={'smooth',1,'radius',10,'alpha',20,'nIter',250,'type'}; 
+    [par, parBSM]   = ParSet_New(sigma/255.0); 
+    t1=tic;
+    I_OPTRC=SPM_STSR(MissM_int,I,option,par, parBSM);
+        % set denoising parameters and tensor recvery parameters;
+    time(1)=toc(t1);
+    disp(['I_OPTRC PSNR: ' num2str(psnr(I_OPTRC,I)) ' time:' num2str(time(1))]);
+end
+
+%%  %%%%%%%%%%%%
+EN_BM3D=1;
+if EN_BM3D
+    addpath(genpath('E:\博三第二学期\代码\compared method\BM3D'));
+    t1=tic;
+    kk=10;
+    y_est= BM3D(MissM_int(:,:,2,kk)/255.0, I(:,:,2,kk), sigma, 'np', 0);
+
+        % set denoising parameters and tensor recvery parameters;
+    time(1)=toc(t1);
+    disp(['BM3D PSNR: ' num2str(psnr(y_est,I(:,:,2,kk))) ' time:' num2str(time(1))]);
+end
+
+

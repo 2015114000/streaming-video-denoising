@@ -1,2 +1,2 @@
-# PTSTRC
-Code for the paper: Patch Tracking-Based Streaming Tensor Ring Completion for Visual Data Recovery
+# SPM-STSR
+Code for the paper: Motion-Aware Streaming Tensor Sparsity Regularization Denoising for Remote Sensing Video

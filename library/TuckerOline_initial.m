@@ -1,6 +1,6 @@
-function [ Ps, core, Pcore, Qcore ] = DTuckerO_initial( initX, As, core, R )
+function [ Ps, core, Pcore, Qcore ] = TuckerOline_initial( initX, As, core, R )
 
-% if As is not given, calculate the CP decomposition of the initial data
+% if As is not given, calculate the CP decomposition of the initial datalibrary/TuckerOline_initial.m
 if ~exist('As') && ~exist('core')
     [cores, factors] = DTucker(tensor(initX), R, 1e-6, 50, 1);
     As = factors;
